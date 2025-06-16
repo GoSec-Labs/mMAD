@@ -6,7 +6,7 @@ pragma solidity ^0.8.19;
  *@dev Extended ERC20 interface with additional functionality for stablecoin
 **/
 
-interface IRC20Extended {
+interface IERC20Extended {
     //standard ERC20 function 
     function totalSupply() external view returns (uint256);
     function balanceOf(address account) external view returns (uint256);
