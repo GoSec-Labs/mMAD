@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.19;
 
+import "../libraries/Errors.sol";
+import "../libraries/Events.sol";
+
 /**
  * @title AccessControl
  * @dev Role-based access control mechanism
