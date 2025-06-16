@@ -33,4 +33,12 @@ library Events{
     event EmergencyPause(address indexed account);
     event EmergencyUnpause(address indexed account);
     event EmergencyWithdrawal(address indexed token, uint256 amount, address indexed to);
+
+    // ERC20 Events
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
+    // Mint and Burn Events
+    event Mint(address indexed to, uint256 amount);
+    event Burn(address indexed from, uint256 amount);
 }
