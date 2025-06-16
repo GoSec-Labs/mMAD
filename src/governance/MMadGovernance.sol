@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.19;
 
-import "./interfaces/IGovernance.sol";
+import "../interfaces/IGovernance.sol";
+import "../utils/AccessControl.sol";
+import "../utils/ReentrancyGuard.sol";
+import "../libraries/Math.sol";
+import "../interfaces/IERC20Extended.sol";
 
 /**
  * @title MMadGovernance
  * @dev Decentralized governance for MMad stablecoin protocol
  */
-contract MMadGovernance is IGovernance, AccessControl, ReentrancyGuard {
+abstract contract MMadGovernance is IGovernance, AccessControl, ReentrancyGuard, IERC20Extended {
     using Math for uint256;
     using Errors for *;
     using Events for *;
@@ -29,9 +33,9 @@ contract MMadGovernance is IGovernance, AccessControl, ReentrancyGuard {
     address private _timelock;
     
     // Events
-    event VotingDelaySet(uint256 oldVotingDelay, uint256 newVotingDelay);
-    event VotingPeriodSet(uint256 oldVotingPeriod, uint256 newVotingPeriod);
-    event ProposalThresholdSet(uint256 oldProposalThreshold, uint256 newProposalThreshold);
+    // event VotingDelaySet(uint256 oldVotingDelay, uint256 newVotingDelay);
+    // event VotingPeriodSet(uint256 oldVotingPeriod, uint256 newVotingPeriod);
+    // event ProposalThresholdSet(uint256 oldProposalThreshold, uint256 newProposalThreshold);
     event QuorumNumeratorUpdated(uint256 oldQuorumNumerator, uint256 newQuorumNumerator);
     event TimelockChange(address oldTimelock, address newTimelock);
     

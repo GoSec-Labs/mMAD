@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.19;
 
-import "./utils/AccessControl.sol";
+import "../utils/AccessControl.sol";
 
 /**
  * @title Timelock
@@ -16,7 +16,7 @@ contract Timelock is AccessControl {
     bytes32 public constant CANCELLER_ROLE = keccak256("CANCELLER_ROLE");
     
     uint256 private _minDelay;
-    mapping(bytes32 => bool) private _timestamps;
+    mapping(bytes32 => uint256) private _timestamps;
     
     event CallScheduled(
         bytes32 indexed id,
