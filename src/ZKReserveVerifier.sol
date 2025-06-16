@@ -3,12 +3,16 @@ pragma solidity ^0.8.19;
 
 import "./interfaces/IZKVerifier.sol";
 import "./utils/AccessControl.sol";
+import "./utils/Pausable.sol";
+import "./libraries/ZKUtils.sol";
+import "./libraries/Math.sol";
+
 
 /**
  * @title ZKReserveVerifier
  * @dev Verifies zero-knowledge proofs for reserve backing and compliance
  */
-contract ZKReserveVerifier is IZKVerifier, AccessControl, Pausable {
+abstract contract ZKReserveVerifier is IZKVerifier, AccessControl, Pausable {
     using ZKUtils for *;
     using Errors for *;
     using Events for *;
@@ -39,7 +43,7 @@ contract ZKReserveVerifier is IZKVerifier, AccessControl, Pausable {
     function verifyReserveProof(
         ProofData calldata proof,
         ReserveProof calldata reserveData
-    ) external view override returns (bool) {
+    ) external view returns (bool) {
         // Validate proof structure
         if (!ZKUtils.validateProofStructure(proof)) return false;
         if (!ZKUtils.validateReserveProof(reserveData)) return false;

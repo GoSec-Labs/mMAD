@@ -1,9 +1,21 @@
-// SPDX-License-Identifier: SEE LICENSE IN LICENSE
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+// Import interfaces
 import "./interfaces/IMMadToken.sol";
 import "./interfaces/IZKVerifier.sol";
+import "./interfaces/IERC20Extended.sol";
+
+// Import libraries
+import "./libraries/Math.sol";
+import "./libraries/ZKUtils.sol";
+import "./libraries/Errors.sol";
+import "./libraries/Events.sol";
+
+// Import utils
 import "./utils/AccessControl.sol";
+import "./utils/ReentrancyGuard.sol";
+import "./utils/Pausable.sol";
 
 /**
  * @title MMadToken
@@ -40,6 +52,8 @@ contract MMadToken is IMMadToken, AccessControl, ReentrancyGuard, Pausable {
     event ReserveManagerSet(address indexed oldManager, address indexed newManager);
     event ZKVerifierSet(address indexed oldVerifier, address indexed newVerifier);
     event MinBackingRatioSet(uint256 oldRatio, uint256 newRatio);
+
+    
     
     constructor(
         address admin,
@@ -149,9 +163,7 @@ contract MMadToken is IMMadToken, AccessControl, ReentrancyGuard, Pausable {
             revert Errors.InvalidReserveProof();
         }
         
-        uint256 oldReserves = _totalReserves;
         _totalReserves = newReserveAmount;
-        
         uint256 newRatio = Math.calculateBackingRatio(newReserveAmount, _totalSupply);
         
         emit Events.ReservesUpdated(newReserveAmount, newRatio);
@@ -240,6 +252,17 @@ contract MMadToken is IMMadToken, AccessControl, ReentrancyGuard, Pausable {
         emit MinBackingRatioSet(oldRatio, ratio);
     }
     
+    // Override pause functions to resolve inheritance conflict
+    function pause() public override onlyRole(PAUSER_ROLE) {
+        _pause();
+        emit Events.EmergencyPause(msg.sender);
+    }
+    
+    function unpause() public override onlyRole(PAUSER_ROLE) {
+        _unpause();
+        emit Events.EmergencyUnpause(msg.sender);
+    }
+    
     // Emergency Functions
     function emergencyWithdraw(address token, uint256 amount) external override onlyRole(DEFAULT_ADMIN_ROLE) whenPaused {
         if (token == address(0)) {
@@ -263,7 +286,7 @@ contract MMadToken is IMMadToken, AccessControl, ReentrancyGuard, Pausable {
             _balances[to] += amount;
         }
         
-        emit Transfer(from, to, amount);
+        emit IERC20Extended.Transfer(from, to, amount);
     }
     
     function _mint(address to, uint256 amount) internal {
@@ -275,8 +298,8 @@ contract MMadToken is IMMadToken, AccessControl, ReentrancyGuard, Pausable {
             _balances[to] += amount;
         }
         
-        emit Transfer(address(0), to, amount);
-        emit Mint(to, amount);
+        emit IERC20Extended.Transfer(address(0), to, amount);
+        emit IERC20Extended.Mint(to, amount);
     }
     
     function _burn(address from, uint256 amount) internal {
@@ -290,8 +313,8 @@ contract MMadToken is IMMadToken, AccessControl, ReentrancyGuard, Pausable {
             _totalSupply -= amount;
         }
         
-        emit Transfer(from, address(0), amount);
-        emit Burn(from, amount);
+        emit IERC20Extended.Transfer(from, address(0), amount);
+        emit IERC20Extended.Burn(from, amount);
     }
     
     function _approve(address owner, address spender, uint256 amount) internal {
@@ -299,7 +322,7 @@ contract MMadToken is IMMadToken, AccessControl, ReentrancyGuard, Pausable {
         if (spender == address(0)) revert Errors.ApproveToZeroAddress();
         
         _allowances[owner][spender] = amount;
-        emit Approval(owner, spender, amount);
+        emit IERC20Extended.Approval(owner, spender, amount);
     }
     
     function _spendAllowance(address owner, address spender, uint256 amount) internal {
