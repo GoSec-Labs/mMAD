@@ -5,7 +5,7 @@ pragma solidity ^0.8.19;
  * @title Errors
  * @dev Custom error definitions for gas-efficient reverts
  */
-library Erros {
+library Errors {
     // Access Control Errors
     error Unauthorized();
     error InvalidRole();
