@@ -1,6 +1,5 @@
 pragma circom 2.0.0;
 
-// Re-export from circomlib for convenience
 include "circomlib/circuits/comparators.circom";
 
 template LessThan(n) {
@@ -74,7 +73,6 @@ template IsZero() {
     in * out === 0;
 }
 
-// You can add custom comparators here if needed
 template CustomGreaterThan(n) {
     signal input in[2];
     signal output out;
