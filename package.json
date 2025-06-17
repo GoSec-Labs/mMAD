@@ -1,0 +1,33 @@
+{
+    "name": "mmad-stablecoin",
+    "version": "1.0.0",
+    "description": "Zero-Knowledge Moroccan Dirham Stablecoin",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "circuit:compile": "node scripts/circom/compile.js",
+        "circuit:setup": "node scripts/circom/setup.js",
+        "circuit:test": "mocha test/circuits/*.test.js",
+        "circuit:all": "npm run circuit:compile && npm run circuit:setup",
+        "circuit:clean": "rm -rf circuits/generated/*.r1cs circuits/generated/*.wasm circuits/generated/*.zkey circuits/generated/*.wtns"
+    },
+    "keywords": [
+        "blockchain",
+        "stablecoin",
+        "zero-knowledge",
+        "circom",
+        "solidity"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "dependencies": {
+        "snarkjs": "^0.7.3",
+        "circomlib": "^2.0.5",
+        "ffjavascript": "^0.3.0"
+    },
+    "devDependencies": {
+        "mocha": "^10.2.0",
+        "chai": "^4.3.7",
+        "circom_tester": "^0.0.19"
+    }
+}
