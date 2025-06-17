@@ -5,7 +5,6 @@ template ReserveProof() {
     signal input actualReserves;
     signal output isValid;
     
-    // Simple check: actualReserves >= minRequiredReserve
     component geq = GreaterEqThan(64);
     geq.in[0] <== actualReserves;
     geq.in[1] <== minRequiredReserve;
