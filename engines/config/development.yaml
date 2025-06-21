@@ -1,0 +1,9 @@
+circuits:
+  path: "../circuits/generated"
+  reserve_proof: "ReserveProof"
+  compliance_check: "ComplianceCheck"
+  batch_verifier: "BatchVerifier"
+
+contracts:
+  mmad_token: "0x742d35Cc6635C0532925a3b8D2000C7C6c6B39f4" #tess 
+  zk_verifier: "0x8ba1f109551bD432803012645Hac136c9.Acc" #test
