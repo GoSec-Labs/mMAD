@@ -1,0 +1,33 @@
+circuits:
+  path: "../circuits/generated"
+  reserve_proof: "ReserveProof"
+  compliance_check: "ComplianceCheck"
+  batch_verifier: "BatchVerifier"
+
+contracts:
+  mmad_token: "0x742d35Cc6635C0532925a3b8D2000C7C6c6B39f4" #tess 
+  zk_verifier: "0x8ba1f109551bD432803012645Hac136c9.Acc" #test
+
+
+  # Add to existing development.yaml
+worker:
+  min_workers: 3
+  max_workers: 15
+  queue_buffer: 200
+  result_buffer: 2000
+  queue_type: "memory"
+  queue_max_size: 50000
+  queue_persistence: false
+  redis_url: "redis://localhost:6379"
+  storage_type: "memory"
+  storage_max_size: 5000
+  storage_ttl: "24h"
+  callback_timeout: "30s"
+  callback_max_retries: 3
+  callback_workers: 5
+  event_buffer: 2000
+  scale_up_threshold: 15
+  scale_down_threshold: 3
+  scale_up_step: 3
+  scale_down_step: 1
+  scale_interval: "30s"
