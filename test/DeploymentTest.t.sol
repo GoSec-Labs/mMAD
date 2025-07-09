@@ -4,11 +4,11 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "../src/MMadToken.sol";
 import "../src/interfaces/IZKVerifier.sol";
-import "./MockZKVerifier.sol"; // ← Use mock verifier
+import "./MockZKVerifier.sol"; 
 
 contract DeploymentTest is Test {
     MMadToken public mmadToken;
-    MockZKVerifier public zkVerifier; // ← Changed to MockZKVerifier
+    MockZKVerifier public zkVerifier; 
     
     address admin = address(0x1);
     
