@@ -6,7 +6,6 @@ import "forge-std/console.sol";
 import "../src/MMadToken.sol";
 import "../src/ZKReserveVerifier.sol";
 
-// Import with aliases to avoid naming conflicts
 import {Groth16Verifier as ReserveVerifier} from "../src/generated/ReserveProofVerifier.sol";
 import {Groth16Verifier as ComplianceVerifier} from "../src/generated/ComplianceCheckVerifier.sol";
 import {Groth16Verifier as BatchVerifier} from "../src/generated/BatchVerifierVerifier.sol";
@@ -164,7 +163,7 @@ contract DeployToSepoliaScript is Script {
             "- [MMadToken](https://sepolia.etherscan.io/address/", vm.toString(address(mmadToken)), ")\n"
         );
         
-        // Note: In a real script, you'd write this to a file
+        // Note: In a real script, you'd write this to a file //
         console.log("\n Deployment info saved (copy from logs above)");
     }
 }
