@@ -22,7 +22,8 @@
     "type": "commonjs",
     "main": "index.js",
     "directories": {
-        "lib": "lib"
+        "lib": "lib",
+        "test": "test"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
@@ -33,10 +34,13 @@
         "circuit:clean": "rm -rf circuits/generated/*.r1cs circuits/generated/*.wasm circuits/generated/*.zkey circuits/generated/*.wtns"
     },
     "dependencies": {
+        "@nomicfoundation/hardhat-toolbox": "^6.0.0",
         "@openzeppelin/contracts": "^5.3.0",
         "circomlib": "^2.0.5",
+        "ethers": "^6.15.0",
         "ffjavascript": "^0.3.0",
-        "snarkjs": "^0.7.3"
+        "hardhat": "^2.25.0",
+        "snarkjs": "^0.7.5"
     },
     "devDependencies": {
         "chai": "^4.3.7",
