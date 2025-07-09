@@ -6,7 +6,6 @@ import "forge-std/console.sol";
 import "../src/MMadToken.sol";
 import "../src/ZKReserveVerifier.sol";
 
-// Import with aliases
 import {Groth16Verifier as ReserveVerifier} from "../src/generated/ReserveProofVerifier.sol";
 import {Groth16Verifier as ComplianceVerifier} from "../src/generated/ComplianceCheckVerifier.sol";
 import {Groth16Verifier as BatchVerifier} from "../src/generated/BatchVerifierVerifier.sol";
