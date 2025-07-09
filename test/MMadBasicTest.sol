@@ -4,11 +4,11 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "../src/MMadToken.sol";
 import "../src/interfaces/IZKVerifier.sol";
-import "./MockZKVerifier.sol"; // ← Use mock instead of real verifier
+import "./MockZKVerifier.sol"; 
 
 contract MMadBasicTest is Test {
     MMadToken public mmadToken;
-    MockZKVerifier public zkVerifier; // ← Changed to MockZKVerifier
+    MockZKVerifier public zkVerifier; 
     
     address public admin = makeAddr("admin");
     address public user1 = makeAddr("user1");
@@ -46,10 +46,7 @@ contract MMadBasicTest is Test {
         mmadToken.updateReserves(reserveAmount, mockProof);
     }
     
-    // ==================== KEEP ALL YOUR EXISTING TESTS ====================
-    // Just copy-paste all your existing test functions here
-    // They'll work now with the mock verifier!
-    
+    // ==================== KEEP ALL EXISTING TESTS ====================
     function test_Deployment_Success() public view {
         assertEq(mmadToken.name(), "Moroccan Mad Stablecoin");
         assertEq(mmadToken.symbol(), "MMAD");
