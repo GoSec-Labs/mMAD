@@ -2,7 +2,7 @@ const snarkjs = require("snarkjs");
 const fs = require("fs");
 
 async function debugCircuitInputs() {
-    console.log("🔍 Debugging Circuit Input Requirements...");
+    console.log(" Debugging Circuit Input Requirements...");
 
     // Try ReserveProof with minimal inputs
     console.log("\n--- Testing ReserveProof with different input structures ---");
@@ -35,11 +35,11 @@ async function debugCircuitInputs() {
             console.log("Public signals:", publicSignals);
             return testInputs[i];
         } catch (error) {
-            console.log(`❌ Failed: ${error.message}`);
+            console.log(` Failed: ${error.message}`);
         }
     }
 
-    console.log("\n❌ None of the test inputs worked. Need to check the circuit file.");
+    console.log("\n None of the test inputs worked. Need to check the circuit file.");
     return null;
 }
 
