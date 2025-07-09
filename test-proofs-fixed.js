@@ -2,7 +2,7 @@ const snarkjs = require("snarkjs");
 const fs = require("fs");
 
 async function testReserveProof() {
-    console.log("🔐 Testing Reserve Proof Generation...");
+    console.log(" Testing Reserve Proof Generation...");
 
     // CORRECT inputs based on your ReserveProof.circom
     const input = {
@@ -17,10 +17,10 @@ async function testReserveProof() {
             "circuits/generated/keys/ReserveProof.zkey"
         );
 
-        console.log("✅ Reserve proof generated successfully!");
-        console.log("📊 Input:", input);
-        console.log("📊 Public signals:", publicSignals);
-        console.log("📊 Is Valid (output):", publicSignals[0] === "1" ? "YES" : "NO");
+        console.log(" Reserve proof generated successfully!");
+        console.log(" Input: ", input);
+        console.log(" Public signals:", publicSignals);
+        console.log(" Is Valid(output): ", publicSignals[0] === "1" ? "YES" : "NO");
 
         // Save proof for smart contract testing
         fs.writeFileSync("reserve-proof.json", JSON.stringify({
@@ -37,7 +37,7 @@ async function testReserveProof() {
 }
 
 async function testComplianceProof() {
-    console.log("🔐 Testing Compliance Proof Generation...");
+    console.log(" Testing Compliance Proof Generation...");
 
     // CORRECT inputs based on your ComplianceCheck.circom
     const input = {
@@ -57,11 +57,11 @@ async function testComplianceProof() {
             "circuits/generated/keys/ComplianceCheck.zkey"
         );
 
-        console.log("✅ Compliance proof generated successfully!");
-        console.log("📊 Input:", input);
-        console.log("📊 Public signals:", publicSignals);
-        console.log("📊 Is Compliant:", publicSignals[0] === "1" ? "YES" : "NO");
-        console.log("📊 User Commitment:", publicSignals[1]);
+        console.log(" Compliance proof generated successfully!");
+        console.log(" Input:", input);
+        console.log(" Public signals:", publicSignals);
+        console.log(" Is Compliant:", publicSignals[0] === "1" ? "YES" : "NO");
+        console.log(" User Commitment:", publicSignals[1]);
 
         return true;
     } catch (error) {
@@ -71,7 +71,7 @@ async function testComplianceProof() {
 }
 
 async function testBatchVerifier() {
-    console.log("🔐 Testing Batch Verifier...");
+    console.log(" Testing Batch Verifier...");
 
     // CORRECT inputs based on your BatchVerifier.circom
     const input = {
@@ -86,21 +86,21 @@ async function testBatchVerifier() {
             "circuits/generated/keys/BatchVerifier.zkey"
         );
 
-        console.log("✅ Batch proof generated successfully!");
-        console.log("📊 Input:", input);
-        console.log("📊 Public signals:", publicSignals);
-        console.log("📊 All Valid:", publicSignals[0] === "1" ? "YES" : "NO");
-        console.log("📊 Batch Commitment:", publicSignals[1]);
+        console.log(" Batch proof generated successfully!");
+        console.log(" Input:", input);
+        console.log(" Public signals:", publicSignals);
+        console.log(" All Valid:", publicSignals[0] === "1" ? "YES" : "NO");
+        console.log(" Batch Commitment:", publicSignals[1]);
 
         return true;
     } catch (error) {
-        console.error("❌ Batch proof generation failed:", error.message);
+        console.error(" Batch proof generation failed:", error.message);
         return false;
     }
 }
 
 async function runAllTests() {
-    console.log("🧪 Starting ZK Proof Tests with CORRECT inputs...\n");
+    console.log(" Starting ZK Proof Tests with CORRECT inputs...\n");
 
     const reserveResult = await testReserveProof();
     console.log("");
@@ -114,8 +114,8 @@ async function runAllTests() {
     console.log(`Batch Proof: ${batchResult ? '✅ PASS' : '❌ FAIL'}`);
 
     if (reserveResult && complianceResult && batchResult) {
-        console.log("\n🎉 ALL ZK PROOFS WORKING CORRECTLY!");
-        console.log("🚀 Ready for smart contract integration!");
+        console.log("\n ALL ZK PROOFS WORKING CORRECTLY!");
+        console.log(" Ready for smart contract integration!");
     }
 }
 
