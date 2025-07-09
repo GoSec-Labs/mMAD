@@ -12,3 +12,16 @@ docs/
 
 # Dotenv file
 .env
+
+# Circom
+circuits/generated/*.r1cs
+circuits/generated/*.wasm
+circuits/generated/*.zkey
+circuits/generated/*.wtns
+circuits/ceremony/*.ptau
+node_modules/
+circuits/generated/circuit_js/
+
+# Keep verification keys and Solidity verifiers
+!circuits/generated/*_verification_key.json
+!circuits/generated/*Verifier.sol
