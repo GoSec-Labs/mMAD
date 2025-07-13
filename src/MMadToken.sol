@@ -361,17 +361,48 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     function _mint(address to, uint256 amount) internal {
         require(!paused(), "Contract is paused");
         require(to != address(0), "Mint to zero address");
+        require(amount > 0, "Cannot mint zero amount");
         require(_totalSupply + amount <= _maxSupply, "Exceeds max supply");
+
+        // Store pre-mint state for validation
+        uint256 totalSupplyBefore = _totalSupply;
+        uint256 balanceBefore = _balances[to];
         
         _totalSupply = _totalSupply + amount;
         _balances[to] = _balances[to] + amount;
         unchecked {
             _balances[to] += amount;
         }
-        
+
+        require(_totalSupply == totalSupplyBefore + amount, "Total supply calculation error");
+        require(_balances[to] == balanceBefore + amount, "Balance calculation error");
+        require(_totalSupply > totalSupplyBefore, "Total supply must increase");
+        require(_balances[to] > balanceBefore, "User balance must increase");
+
+        // Validate conservation of tokens
+        _validateTokenConservation();
+
+
         emit Events.Transfer(address(0), to, amount);
         emit Events.Mint(to, amount);
     }
+
+    // Add token conservation validation
+    function _validateTokenConservation() internal view {
+        // Token conservation check omitted because not all addresses are tracked.
+        // In production, consider tracking all holders or using an iterable mapping.
+    }
+
+    function _validateMintInvariants(address to, uint256 amount) internal view {
+        require(to != address(0), "Cannot mint to zero address");
+        require(amount > 0, "Cannot mint zero amount");
+        require(_totalSupply + amount <= _maxSupply, "Would exceed max supply");
+
+        // Ensure mint won't overflow balances
+        require(_balances[to] + amount >= _balances[to], "Balance overflow");
+        require(_totalSupply + amount >= _totalSupply, "Supply overflow");
+    }
+
     
     function _burn(address from, uint256 amount) internal {
         require(!paused(), "Contract is paused");
