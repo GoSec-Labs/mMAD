@@ -247,11 +247,26 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
         emit Events.ReserveManagerUpdated(oldManager, manager);
     }
     
+
+
     function setMinBackingRatio(uint256 ratio) external virtual override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(ratio >= 100, "Ratio must be >= 100%");
+        require(ratio <= 1000, "Ratio must be <= 1000%");
+
+        if (_totalSupply > 0) {
+            uint256 requiredReserves = (_totalSupply * ratio) / 100;
+            require(_totalReserves >= requiredReserves, "Current reserves insufficient for new backing ratio");
+        }
+
         uint256 oldRatio = _minBackingRatio;
         _minBackingRatio = ratio;
         emit Events.MinBackingRatioUpdated(oldRatio, ratio);
+    }
+
+    function isReserveAdequate() external view returns (bool) {
+        if (_totalSupply == 0) return true;
+        uint256 requiredReserves = (_totalSupply * _minBackingRatio) / 100;
+        return _totalReserves >= requiredReserves;
     }
     
     // Pause functions - Implemented from IMMadToken
