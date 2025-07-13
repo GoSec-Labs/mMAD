@@ -110,8 +110,17 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     
     // Extended Token Functions
     function mint(address to, uint256 amount) public virtual override onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256 supplyBefore = _totalSupply;
         _requireValidMint(amount);
         _mint(to, amount);
+
+        require(_totalSupply > supplyBefore, "Mint must increase total supply");
+        require(_totalSupply == supplyBefore + amount, "Mint amount must match supply increase");
+    }
+
+    function _validateSupplyMonotonicity(uint256 supplyBefore, uint256 expectedIncrease) internal view {
+        require(_totalSupply >= supplyBefore, "Supply cannot decrease");
+        require(_totalSupply == supplyBefore + expectedIncrease, "Supply increase must match expected");
     }
     
     function mintWithProof(
@@ -470,14 +479,15 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     function _requireValidMint(uint256 amount) internal view {
         require(!paused(), "Contract is paused");
         require(amount > 0, "Invalid amount");
+
+        // Check for overflow before calculation
+        require(_totalSupply + amount > _totalSupply, "Supply calculation overflow");
         require(_totalSupply + amount <= _maxSupply, "Exceeds max supply");
 
         // Check if reserves support this minting
         uint256 newSupply = _totalSupply + amount;
         uint256 requiredReserves = (newSupply * _minBackingRatio) / 100;
         require(_totalReserves >= requiredReserves, "Insufficient reserves for backing ratio");
-
-        require(newSupply > 0, "Invalid supply calculation");
     }
     
     function _verifyAndUseMintingProof(
