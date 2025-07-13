@@ -327,7 +327,8 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
         require(to != address(0), "Mint to zero address");
         require(_totalSupply + amount <= _maxSupply, "Exceeds max supply");
         
-        _totalSupply += amount;
+        _totalSupply = _totalSupply + amount;
+        _balances[to] = _balances[to] + amount;
         unchecked {
             _balances[to] += amount;
         }
