@@ -86,8 +86,14 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function transfer(address to, uint256 amount) public virtual override whenNotPaused returns (bool) {
+        require(amount > 0, "Cannot transfer zero amount");
+        uint256 totalSupplyBefore = _totalSupply;
         address owner = msg.sender;
+
         _transfer(owner, to, amount);
+
+        require(_totalSupply == totalSupplyBefore, "Transfer modified total supply");
+
         return true;
     }
     
@@ -102,10 +108,31 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function transferFrom(address from, address to, uint256 amount) public virtual override whenNotPaused returns (bool) {
+        require(amount > 0, "Cannot transfer zero amount");
+
+        uint256 totalSupplyBefore = _totalSupply;
         address spender = msg.sender;
+
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
+
+        require(_totalSupply == totalSupplyBefore, "TransferFrom modified total supply");
+        
         return true;
+    }
+
+    function __validateTransferOperation(
+        address from, 
+        address to, 
+        uint256 amount, 
+        uint256 totalSupplyBefore,
+        uint256 fromBalanceBefore,
+        uint256 toBalanceBefore
+    )internal view{
+        require(_totalSupply == totalSupplyBefore, "Total supply must remain constant");
+        require(_balances[from] == fromBalanceBefore - amount, "Sender balance validation failed");
+        require(_balances[to] == toBalanceBefore + amount, "Recipient balance validation failed");
+        require(_balances[from] + _balances[to] == fromBalanceBefore + toBalanceBefore, "Transfer must conserve tokens");
     }
     
     // Extended Token Functions
@@ -354,17 +381,35 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
         require(!paused(), "Contract is paused");
         require(from != address(0), "Transfer from zero address");
         require(to != address(0), "Transfer to zero address");
+        require(amount > 0, "Cannot transfer zero amount");
 
-        
         uint256 fromBalance = _balances[from];
         require(fromBalance >= amount, "Insufficient balance");
+
+        uint256 totalSupplyBefore = _totalSupply;
+
+        // Store balances for validation
+        uint256 fromBalanceBefore = fromBalance;
+        uint256 toBalanceBefore = _balances[to];
         
         unchecked {
             _balances[from] = fromBalance - amount;
             _balances[to] += amount;
         }
+
+        require(_totalSupply == totalSupplyBefore, "Transfer must not modify total supply");
+        require(_balances[from] == fromBalanceBefore - amount, "From balance incorrect");
+        require(_balances[to] == toBalanceBefore + amount, "To balance incorrect");
+
+        uint256 balanceSumBefore = fromBalanceBefore + toBalanceBefore;
+        uint256 balanceSumAfter = _balances[from] + _balances[to];
+        require(balanceSumAfter == balanceSumBefore, "Balance sum must be preserved");
         
         emit Events.Transfer(from, to, amount);
+    }
+
+    function _validateTotalSupplyInvariant(uint256 expectedSupply) internal view {
+        require(_totalSupply == expectedSupply, "Total supply invariant violated");
     }
     
     function _mint(address to, uint256 amount) internal {
