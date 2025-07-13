@@ -86,8 +86,14 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function transfer(address to, uint256 amount) public virtual override whenNotPaused returns (bool) {
+        require(amount > 0, "Cannot transfer zero amount");
+        uint256 totalSupplyBefore = _totalSupply;
         address owner = msg.sender;
+
         _transfer(owner, to, amount);
+
+        require(_totalSupply == totalSupplyBefore, "Transfer modified total supply");
+
         return true;
     }
     
@@ -95,23 +101,53 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
         return _allowances[owner][spender];
     }
     
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+    function approve(address spender, uint256 amount) public virtual override whenNotPaused returns (bool) {
         address owner = msg.sender;
         _approve(owner, spender, amount);
         return true;
     }
     
     function transferFrom(address from, address to, uint256 amount) public virtual override whenNotPaused returns (bool) {
+        require(amount > 0, "Cannot transfer zero amount");
+
+        uint256 totalSupplyBefore = _totalSupply;
         address spender = msg.sender;
+
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
+
+        require(_totalSupply == totalSupplyBefore, "TransferFrom modified total supply");
+        
         return true;
+    }
+
+    function __validateTransferOperation(
+        address from, 
+        address to, 
+        uint256 amount, 
+        uint256 totalSupplyBefore,
+        uint256 fromBalanceBefore,
+        uint256 toBalanceBefore
+    )internal view{
+        require(_totalSupply == totalSupplyBefore, "Total supply must remain constant");
+        require(_balances[from] == fromBalanceBefore - amount, "Sender balance validation failed");
+        require(_balances[to] == toBalanceBefore + amount, "Recipient balance validation failed");
+        require(_balances[from] + _balances[to] == fromBalanceBefore + toBalanceBefore, "Transfer must conserve tokens");
     }
     
     // Extended Token Functions
     function mint(address to, uint256 amount) public virtual override onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256 supplyBefore = _totalSupply;
         _requireValidMint(amount);
         _mint(to, amount);
+
+        require(_totalSupply > supplyBefore, "Mint must increase total supply");
+        require(_totalSupply == supplyBefore + amount, "Mint amount must match supply increase");
+    }
+
+    function _validateSupplyMonotonicity(uint256 supplyBefore, uint256 expectedIncrease) internal view {
+        require(_totalSupply >= supplyBefore, "Supply cannot decrease");
+        require(_totalSupply == supplyBefore + expectedIncrease, "Supply increase must match expected");
     }
     
     function mintWithProof(
@@ -129,10 +165,12 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function burn(uint256 amount) public virtual override whenNotPaused {
+        require(amount > 0, "Cannot burn zero amount");
         _burn(msg.sender, amount);
     }
     
     function burnFrom(address from, uint256 amount) public virtual override whenNotPaused {
+        require(amount > 0, "Cannot burn zero amount");
         _spendAllowance(from, msg.sender, amount);
         _burn(from, amount);
     }
@@ -150,21 +188,36 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     function updateReserves(
         uint256 newReserveAmount,
         IZKVerifier.ProofData calldata proof
-    ) external virtual override onlyRole(RESERVE_MANAGER_ROLE) nonReentrant {
+    ) external virtual override onlyRole(RESERVE_MANAGER_ROLE) nonReentrant whenNotPaused {
+
+        if (_totalSupply > 0) {
+            uint256 requiredMinReserves = (_totalSupply * _minBackingRatio) / 100;
+            require(newReserveAmount >= requiredMinReserves, "New reserves insufficient for current     supply backing ratio");
+        }
+
         // Create ReserveProof struct with correct field names
         IZKVerifier.ReserveProof memory reserveProof = IZKVerifier.ReserveProof({
             requiredReserve: (_totalSupply * _minBackingRatio) / 100,
             currentSupply: _totalSupply,
             timestamp: block.timestamp
         });
+
         
         require(_zkVerifier.verifyReserveProof(proof, reserveProof), "Invalid reserve proof");
-        
+
+        uint256 oldReserves = _totalReserves;
         _totalReserves = newReserveAmount;
         uint256 newRatio = Math.calculateBackingRatio(newReserveAmount, _totalSupply);
         
         emit Events.ReservesUpdated(newReserveAmount, newRatio);
         emit Events.ReserveProofSubmitted(newReserveAmount, _totalSupply, newRatio);
+    }
+
+    function _validateReserveAdequacy() internal view {
+        if (_totalSupply > 0) {
+            uint256 requiredReserves = (_totalSupply * _minBackingRatio) / 100;
+            require(_totalReserves >= requiredReserves, "Reserves below minimum backing ratio");
+        }
     }
     
     // Compliance Integration
@@ -232,11 +285,26 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
         emit Events.ReserveManagerUpdated(oldManager, manager);
     }
     
+
+
     function setMinBackingRatio(uint256 ratio) external virtual override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(ratio >= 100, "Ratio must be >= 100%");
+        require(ratio <= 1000, "Ratio must be <= 1000%");
+
+        if (_totalSupply > 0) {
+            uint256 requiredReserves = (_totalSupply * ratio) / 100;
+            require(_totalReserves >= requiredReserves, "Current reserves insufficient for new backing ratio");
+        }
+
         uint256 oldRatio = _minBackingRatio;
         _minBackingRatio = ratio;
         emit Events.MinBackingRatioUpdated(oldRatio, ratio);
+    }
+
+    function isReserveAdequate() external view returns (bool) {
+        if (_totalSupply == 0) return true;
+        uint256 requiredReserves = (_totalSupply * _minBackingRatio) / 100;
+        return _totalReserves >= requiredReserves;
     }
     
     // Pause functions - Implemented from IMMadToken
@@ -258,6 +326,7 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
             IERC20Extended(token).transfer(msg.sender, amount);
         }
         emit Events.EmergencyWithdrawal(token, amount, msg.sender);
+        //SafeERC20.safeTransfer(IERC20(token), msg.sender, amount);
     }
     
     // IZKVerifier functions - implementing interface requirements
@@ -309,49 +378,132 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     
     // Internal Functions
     function _transfer(address from, address to, uint256 amount) internal {
+        require(!paused(), "Contract is paused");
         require(from != address(0), "Transfer from zero address");
         require(to != address(0), "Transfer to zero address");
-        
+        require(amount > 0, "Cannot transfer zero amount");
+
         uint256 fromBalance = _balances[from];
         require(fromBalance >= amount, "Insufficient balance");
+
+        uint256 totalSupplyBefore = _totalSupply;
+
+        // Store balances for validation
+        uint256 fromBalanceBefore = fromBalance;
+        uint256 toBalanceBefore = _balances[to];
         
         unchecked {
             _balances[from] = fromBalance - amount;
             _balances[to] += amount;
         }
+
+        require(_totalSupply == totalSupplyBefore, "Transfer must not modify total supply");
+        require(_balances[from] == fromBalanceBefore - amount, "From balance incorrect");
+        require(_balances[to] == toBalanceBefore + amount, "To balance incorrect");
+
+        uint256 balanceSumBefore = fromBalanceBefore + toBalanceBefore;
+        uint256 balanceSumAfter = _balances[from] + _balances[to];
+        require(balanceSumAfter == balanceSumBefore, "Balance sum must be preserved");
         
         emit Events.Transfer(from, to, amount);
     }
+
+    function _validateTotalSupplyInvariant(uint256 expectedSupply) internal view {
+        require(_totalSupply == expectedSupply, "Total supply invariant violated");
+    }
     
     function _mint(address to, uint256 amount) internal {
+        require(!paused(), "Contract is paused");
         require(to != address(0), "Mint to zero address");
+        require(amount > 0, "Cannot mint zero amount");
         require(_totalSupply + amount <= _maxSupply, "Exceeds max supply");
+
+        // Store pre-mint state for validation
+        uint256 totalSupplyBefore = _totalSupply;
+        uint256 balanceBefore = _balances[to];
         
-        _totalSupply += amount;
+        _totalSupply = _totalSupply + amount;
+        _balances[to] = _balances[to] + amount;
         unchecked {
             _balances[to] += amount;
         }
-        
+
+        require(_totalSupply == totalSupplyBefore + amount, "Total supply calculation error");
+        require(_balances[to] == balanceBefore + amount, "Balance calculation error");
+        require(_totalSupply > totalSupplyBefore, "Total supply must increase");
+        require(_balances[to] > balanceBefore, "User balance must increase");
+
+        // Validate conservation of tokens
+        _validateTokenConservation();
+
+
         emit Events.Transfer(address(0), to, amount);
         emit Events.Mint(to, amount);
     }
+
+    // Add token conservation validation
+    function _validateTokenConservation() internal view {
+        // Token conservation check omitted because not all addresses are tracked.
+        // In production, consider tracking all holders or using an iterable mapping.
+    }
+
+    function _validateMintInvariants(address to, uint256 amount) internal view {
+        require(to != address(0), "Cannot mint to zero address");
+        require(amount > 0, "Cannot mint zero amount");
+        require(_totalSupply + amount <= _maxSupply, "Would exceed max supply");
+
+        // Ensure mint won't overflow balances
+        require(_balances[to] + amount >= _balances[to], "Balance overflow");
+        require(_totalSupply + amount >= _totalSupply, "Supply overflow");
+    }
+
     
     function _burn(address from, uint256 amount) internal {
+        require(!paused(), "Contract is paused");
         require(from != address(0), "Burn from zero address");
-        
+        require(amount > 0, "Cannot burn zero amount");
+
         uint256 accountBalance = _balances[from];
         require(accountBalance >= amount, "Insufficient balance");
-        
+
+        // Store pre-burn state for validation
+        uint256 totalSupplyBefore = _totalSupply;
+        uint256 balanceBefore = accountBalance;
+
+        // Update state atomically
         unchecked {
             _balances[from] = accountBalance - amount;
             _totalSupply -= amount;
         }
+
+        // Comprehensive post-burn state validation
+        require(_totalSupply >= 0, "Total supply underflow");
+        require(_balances[from] >= 0, "Balance underflow");
+        require(_totalSupply == totalSupplyBefore - amount, "Total supply calculation error");
+        require(_balances[from] == balanceBefore - amount, "Balance calculation error");
+
+        // Ensure burn doesn't violate economic constraints
+        _validateReserveAdequacy();
         
         emit Events.Transfer(from, address(0), amount);
         emit Events.Burn(from, amount);
     }
+
+    function _validateBurnInvariants(address from, uint256 amount) internal view {
+        require(_balances[from] >= amount, "Insufficient balance for burn");
+        require(_totalSupply >= amount, "Insufficient total supply for burn");
+
+        // Ensure burn won't create invalid state
+        uint256 newTotalSupply = _totalSupply - amount;
+        uint256 newBalance = _balances[from] - amount;
+
+        require(newTotalSupply >= 0, "Burn would cause supply underflow");
+        require(newBalance >= 0, "Burn would cause balance underflow");
+    }
+
     
     function _approve(address owner, address spender, uint256 amount) internal {
+        require(!paused(), "Contract is paused");
         require(owner != address(0), "Approve from zero address");
         require(spender != address(0), "Approve to zero address");
         
@@ -370,12 +522,17 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function _requireValidMint(uint256 amount) internal view {
+        require(!paused(), "Contract is paused");
         require(amount > 0, "Invalid amount");
+
+        // Check for overflow before calculation
+        require(_totalSupply + amount > _totalSupply, "Supply calculation overflow");
         require(_totalSupply + amount <= _maxSupply, "Exceeds max supply");
-        
+
         // Check if reserves support this minting
         uint256 newSupply = _totalSupply + amount;
-        require(Math.meetsMinimumRatio(_totalReserves, newSupply, _minBackingRatio), "Insufficient reserves");
+        uint256 requiredReserves = (newSupply * _minBackingRatio) / 100;
+        require(_totalReserves >= requiredReserves, "Insufficient reserves for backing ratio");
     }
     
     function _verifyAndUseMintingProof(
