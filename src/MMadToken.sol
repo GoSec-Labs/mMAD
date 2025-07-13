@@ -258,6 +258,7 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
             IERC20Extended(token).transfer(msg.sender, amount);
         }
         emit Events.EmergencyWithdrawal(token, amount, msg.sender);
+        //SafeERC20.safeTransfer(IERC20(token), msg.sender, amount);
     }
     
     // IZKVerifier functions - implementing interface requirements
@@ -324,6 +325,7 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function _mint(address to, uint256 amount) internal {
+        require(!paused(), "Contract is paused");
         require(to != address(0), "Mint to zero address");
         require(_totalSupply + amount <= _maxSupply, "Exceeds max supply");
         
@@ -371,11 +373,14 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function _requireValidMint(uint256 amount) internal view {
+        require(!paused(), "Contract is paused");
         require(amount > 0, "Invalid amount");
         require(_totalSupply + amount <= _maxSupply, "Exceeds max supply");
+
         
         // Check if reserves support this minting
         uint256 newSupply = _totalSupply + amount;
+        uint256 requiredReserves = (newSupply * _minBackingRatio) / 100;
         require(Math.meetsMinimumRatio(_totalReserves, newSupply, _minBackingRatio), "Insufficient reserves");
     }
     
