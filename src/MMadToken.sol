@@ -150,21 +150,36 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     function updateReserves(
         uint256 newReserveAmount,
         IZKVerifier.ProofData calldata proof
-    ) external virtual override onlyRole(RESERVE_MANAGER_ROLE) nonReentrant {
+    ) external virtual override onlyRole(RESERVE_MANAGER_ROLE) nonReentrant whenNotPaused {
+
+        if (_totalSupply > 0) {
+            uint256 requiredMinReserves = (_totalSupply * _minBackingRatio) / 100;
+            require(newReserveAmount >= requiredMinReserves, "New reserves insufficient for current     supply backing ratio");
+        }
+
         // Create ReserveProof struct with correct field names
         IZKVerifier.ReserveProof memory reserveProof = IZKVerifier.ReserveProof({
             requiredReserve: (_totalSupply * _minBackingRatio) / 100,
             currentSupply: _totalSupply,
             timestamp: block.timestamp
         });
+
         
         require(_zkVerifier.verifyReserveProof(proof, reserveProof), "Invalid reserve proof");
-        
+
+        uint256 oldReserves = _totalReserves;
         _totalReserves = newReserveAmount;
         uint256 newRatio = Math.calculateBackingRatio(newReserveAmount, _totalSupply);
         
         emit Events.ReservesUpdated(newReserveAmount, newRatio);
         emit Events.ReserveProofSubmitted(newReserveAmount, _totalSupply, newRatio);
+    }
+
+    function _validateReserveAdequacy() internal view {
+        if (_totalSupply > 0) {
+            uint256 requiredReserves = (_totalSupply * _minBackingRatio) / 100;
+            require(_totalReserves >= requiredReserves, "Reserves below minimum backing ratio");
+        }
     }
     
     // Compliance Integration
@@ -379,11 +394,12 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
         require(amount > 0, "Invalid amount");
         require(_totalSupply + amount <= _maxSupply, "Exceeds max supply");
 
-        
         // Check if reserves support this minting
         uint256 newSupply = _totalSupply + amount;
         uint256 requiredReserves = (newSupply * _minBackingRatio) / 100;
-        require(Math.meetsMinimumRatio(_totalReserves, newSupply, _minBackingRatio), "Insufficient reserves");
+        require(_totalReserves >= requiredReserves, "Insufficient reserves for backing ratio");
+
+        require(newSupply > 0, "Invalid supply calculation");
     }
     
     function _verifyAndUseMintingProof(
