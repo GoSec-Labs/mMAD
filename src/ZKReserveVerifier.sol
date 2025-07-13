@@ -154,6 +154,11 @@ contract ZKReserveVerifier is IZKVerifier, AccessControl {
     function isProofValid(bytes32 proofHash) external view override returns (bool) {
         return _validProofs[proofHash];
     }
+
+    function _markProofAsValid(bytes32 proofHash) internal {
+        _validProofs[proofHash] = true;
+    }
+
     
     function getRequiredReserveRatio() external view override returns (uint256) {
         return _requiredReserveRatio;
