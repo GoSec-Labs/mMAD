@@ -95,7 +95,7 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
         return _allowances[owner][spender];
     }
     
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+    function approve(address spender, uint256 amount) public virtual override whenNotPaused returns (bool) {
         address owner = msg.sender;
         _approve(owner, spender, amount);
         return true;
@@ -372,6 +372,7 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function _approve(address owner, address spender, uint256 amount) internal {
+        require(!paused(), "Contract is paused");
         require(owner != address(0), "Approve from zero address");
         require(spender != address(0), "Approve to zero address");
         
