@@ -129,10 +129,12 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function burn(uint256 amount) public virtual override whenNotPaused {
+        require(amount > 0, "Cannot burn zero amount");
         _burn(msg.sender, amount);
     }
     
     function burnFrom(address from, uint256 amount) public virtual override whenNotPaused {
+        require(amount > 0, "Cannot burn zero amount");
         _spendAllowance(from, msg.sender, amount);
         _burn(from, amount);
     }
@@ -372,19 +374,48 @@ contract MMadToken is IMMadToken, IERC20Extended, AccessControl, ReentrancyGuard
     }
     
     function _burn(address from, uint256 amount) internal {
+        require(!paused(), "Contract is paused");
         require(from != address(0), "Burn from zero address");
-        
+        require(amount > 0, "Cannot burn zero amount");
+
         uint256 accountBalance = _balances[from];
         require(accountBalance >= amount, "Insufficient balance");
-        
+
+        // Store pre-burn state for validation
+        uint256 totalSupplyBefore = _totalSupply;
+        uint256 balanceBefore = accountBalance;
+
+        // Update state atomically
         unchecked {
             _balances[from] = accountBalance - amount;
             _totalSupply -= amount;
         }
+
+        // Comprehensive post-burn state validation
+        require(_totalSupply >= 0, "Total supply underflow");
+        require(_balances[from] >= 0, "Balance underflow");
+        require(_totalSupply == totalSupplyBefore - amount, "Total supply calculation error");
+        require(_balances[from] == balanceBefore - amount, "Balance calculation error");
+
+        // Ensure burn doesn't violate economic constraints
+        _validateReserveAdequacy();
         
         emit Events.Transfer(from, address(0), amount);
         emit Events.Burn(from, amount);
     }
+
+    function _validateBurnInvariants(address from, uint256 amount) internal view {
+        require(_balances[from] >= amount, "Insufficient balance for burn");
+        require(_totalSupply >= amount, "Insufficient total supply for burn");
+
+        // Ensure burn won't create invalid state
+        uint256 newTotalSupply = _totalSupply - amount;
+        uint256 newBalance = _balances[from] - amount;
+
+        require(newTotalSupply >= 0, "Burn would cause supply underflow");
+        require(newBalance >= 0, "Burn would cause balance underflow");
+    }
+
     
     function _approve(address owner, address spender, uint256 amount) internal {
         require(!paused(), "Contract is paused");
